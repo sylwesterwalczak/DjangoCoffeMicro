@@ -1,0 +1,323 @@
+version: "3.9"
+
+services:
+
+  authdb:
+    image: postgres
+    volumes:
+      - ./auth_service/data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=microUser
+      - POSTGRES_PASSWORD=superTajneHas0
+    ports:
+      - "8081:5432"
+    restart: always
+    networks:
+      - djangomicro
+
+  authdjango:
+    build:
+      context: ./auth_service/
+    command: python manage.py runserver 0.0.0.0:8080
+    volumes:
+      - ./auth_service:/code
+    ports:
+      - "8080:8080"
+    env_file: .env
+    depends_on:
+      - authdb
+    restart: always
+    networks:
+      - djangomicro
+
+  supplierdb:
+    image: postgres
+    volumes:
+      - ./supplier_service/data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=microUser
+      - POSTGRES_PASSWORD=superTajneHas0
+    ports:
+      - "8011:5432"
+    restart: always
+    networks:
+      - djangomicro
+
+  supplierdjango:
+    build:
+      context: ./supplier_service/
+    command: python manage.py runserver 0.0.0.0:8010
+    volumes:
+      - ./supplier_service:/code
+    ports:
+      - "8010:8010"
+    env_file: .env
+    depends_on:
+      - supplierdb
+      - authdb
+      - authdjango
+    restart: always
+    networks:
+      - djangomicro
+
+  storydb:
+    image: postgres
+    volumes:
+      - ./story_service/data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=microUser
+      - POSTGRES_PASSWORD=superTajneHas0
+    ports:
+      - "8021:5432"
+    restart: always
+    networks:
+      - djangomicro
+
+  storydjango:
+    build:
+      context: ./story_service/
+    command: python manage.py runserver 0.0.0.0:8020
+    volumes:
+      - ./story_service:/code
+    ports:
+      - "8020:8020"
+    env_file: .env
+    depends_on:
+      - storydb
+      - authdb
+      - authdjango
+    restart: always
+    networks:
+      - djangomicro
+  
+  menudb:
+    image: postgres
+    volumes:
+      - ./menu_service/data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=microUser
+      - POSTGRES_PASSWORD=superTajneHas0
+    ports:
+      - "8031:5432"
+    restart: always
+    networks:
+      - djangomicro
+
+  menudjango:
+    build:
+      context: ./menu_service/
+    command: python manage.py runserver 0.0.0.0:8030
+    volumes:
+      - ./menu_service:/code
+    ports:
+      - "8030:8030"
+    env_file: .env
+    depends_on:
+      - menudb
+      - authdb
+      - authdjango
+      - rabbitmq3
+    restart: always
+    networks:
+      - djangomicro
+
+  purchasedb:
+    image: postgres
+    volumes:
+      - ./purchase_service/data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=microUser
+      - POSTGRES_PASSWORD=superTajneHas0
+    ports:
+      - "8041:5432"
+    restart: always
+    networks:
+      - djangomicro
+
+  purchasedjango:
+    build:
+      context: ./purchase_service/
+    command: python manage.py runserver 0.0.0.0:8040
+    volumes:
+      - ./purchase_service:/code
+    ports:
+      - "8040:8040"
+    env_file: .env
+    depends_on:
+      - rabbitmq3
+      - authdb
+      - purchasedb
+      - authdjango
+    restart: always
+    networks:
+      - djangomicro
+
+  messagedb:
+    image: postgres
+    volumes:
+      - ./message_service/data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=microUser
+      - POSTGRES_PASSWORD=superTajneHas0
+    ports:
+      - "8051:5432"
+    restart: always
+    networks:
+      - djangomicro
+
+  messagedjango:
+    build:
+      context: ./message_service/
+    command: python manage.py runserver 0.0.0.0:8050
+    volumes:
+      - ./message_service:/code
+    ports:
+      - "8050:8050"
+    env_file: .env
+    depends_on:
+      - rabbitmq3
+      - authdb
+      - authdjango
+    restart: always
+    networks:
+      - djangomicro
+
+  rabbitmq3:
+    container_name: "rabbitmq"
+    image: rabbitmq:3.8-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=myuser
+      - RABBITMQ_DEFAULT_PASS=mypassword
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    networks:
+      - djangomicro
+
+  redis:
+    image: "redis:alpine"
+    hostname: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - djangomicro
+
+  consumer_story:
+    build:
+      context: ./story_service/
+    command: "python consumer.py"
+    env_file: .env
+    volumes:
+      - ./story_service:/code
+    depends_on:
+      - rabbitmq3
+    networks:
+      - djangomicro
+
+  consumer_purchase:
+    build:
+      context: ./purchase_service/
+    command: "python consumer.py"
+    env_file: .env
+    volumes:
+      - ./purchase_service:/code
+    depends_on:
+      - rabbitmq3
+    networks:
+      - djangomicro
+  
+  consumer_message:
+    build:
+      context: ./message_service/
+    command: "python consumer.py"
+    env_file: .env
+    volumes:
+      - ./message_service:/code
+    depends_on:
+      - rabbitmq3
+    networks:
+      - djangomicro
+  
+  setup:
+    build:
+      context: setup/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    init: true
+    volumes:
+      - setup:/state:Z
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      LOGSTASH_INTERNAL_PASSWORD: ${LOGSTASH_INTERNAL_PASSWORD:-}
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
+    networks:
+      - djangomicro
+
+  elasticsearch:
+    build:
+      context: elasticsearch/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro,z
+      - elasticsearch:/usr/share/elasticsearch/data:z
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: -Xmx256m -Xms256m
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      discovery.type: single-node
+    networks:
+      - djangomicro
+      
+  logstash:
+    build:
+      context: logstash/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro,Z
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro,Z
+    ports:
+      - "5044:5044"
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: -Xmx256m -Xms256m
+      LOGSTASH_INTERNAL_PASSWORD: ${LOGSTASH_INTERNAL_PASSWORD:-}
+    networks:
+      - djangomicro
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    build:
+      context: kibana/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro,Z
+    ports:
+      - "5601:5601"
+    environment:
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
+    networks:
+      - djangomicro
+    depends_on:
+      - elasticsearch
+
+networks:
+  djangomicro:
+
+volumes:
+  setup:
+  elasticsearch:
+

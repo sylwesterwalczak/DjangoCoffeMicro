@@ -1,0 +1,4 @@
+Django>=3.2
+django-cors-headers>=3.11
+djangorestframework>=3.13
+requests==2.27.1

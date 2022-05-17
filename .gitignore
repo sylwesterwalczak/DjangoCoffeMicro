@@ -1,0 +1,17 @@
+xxx/
+microservices_auth_lib/
+env/
+
+.env
+
+# Django #
+django-micro-auth-1.0.tar.gz
+django-micro-auth/dist
+*.log
+*.pot
+*.pyc
+__pycache__
+db.sqlite3
+media
+data
+docker-elk

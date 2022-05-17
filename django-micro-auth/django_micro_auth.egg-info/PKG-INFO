@@ -1,0 +1,81 @@
+Metadata-Version: 2.1
+Name: django-micro-auth
+Version: 1.0
+Summary: Django Microservices Authentication.
+Home-page: https://www.sylwesterwalczak.pl/
+Author: Sylwester Walczak
+Author-email: sylwestermarekwalczak@gmail.com
+License: MIT License
+Platform: UNKNOWN
+Classifier: Environment :: Web Environment
+Classifier: Framework :: Django
+Classifier: Framework :: Django :: 3.2
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Topic :: Internet :: WWW/HTTP
+Classifier: Topic :: Internet :: WWW/HTTP :: Dynamic Content
+Requires-Python: >=3.8
+License-File: LICENSE
+
+=====
+Django Microservices Authentication 
+=====
+
+DMA is an application that allows you to create a user authentication service while preserving 
+the Django concept and preserving the authenticated user instance\
+
+Quick start
+-----------
+
+1. Add "authx" to your INSTALLED_APPS setting like this::
+
+    INSTALLED_APPS = [
+        ...
+        "authx",
+    ]
+    
+2. Add "authx.authentication.TokenAuthentication" to your REST_FRAMEWORK setting like this::
+
+    REST_FRAMEWORK = {
+        "DEFAULT_AUTHENTICATION_CLASSES": [
+            "authx.authentication.TokenAuthentication",
+            ...
+        ],
+        ...
+    }
+    
+    AUTH_USER_TABLE = "<User table name from authorization system>"
+
+3. Include the authx URLconf in your project urls.py like this::
+
+    path('', include("authx.urls")),
+
+4. Run ``python manage.py migrate`` to create the polls models.
+
+5. Add to settings::
+        AUTH_USER_MODEL = "authx.CustomUser"
+        
+        AUTH_DB = 'primary_db'  
+        DATABASE_ROUTERS = ["authx.dbrouter.AuthRouter"]
+        AUTH_SERVER_PREFIX = "<Authorization service url>"
+        DATABASES = {
+            "default": {
+                ...
+            },
+            "primary_db": {
+                "ENGINE": "<Data to authorization service database>",
+                "NAME": "<Data to authorization service database>",
+                "USER": "<Data to authorization service database>",
+                "PASSWORD": "<Data to authorization service database>",
+                "HOST": "<Data to authorization service database>",
+                "PORT": "<Data to authorization service database>",
+            }
+        }
+
+
